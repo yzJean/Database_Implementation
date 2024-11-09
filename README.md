@@ -1,0 +1,2 @@
+# Database_Implementation
+Simplified database implementation
