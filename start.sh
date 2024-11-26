@@ -1,10 +1,11 @@
-#! /usr/bin bash
+#!/usr/bin bash
+set -e
 
 build_dir="./build/"
 if [ -z $build_dir ]; then
     mkdir -p $build_dir
 fi
-javac Database.java -d $build_dir
+javac Database.java -d $build_dir 
 echo "Built successfully"
 
 main_program="Database"

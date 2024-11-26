@@ -1,11 +1,11 @@
 import java.util.List;
 import java.util.LinkedList;
 
-public class Database{
+public class Database2{
 
     private Row rows[] = new Row[100];
 
-    public Database(){
+    public Database2(){
 
 	for(int i=0; i<100; i++){
            rows[i] = new Row(i);
@@ -18,10 +18,10 @@ public class Database{
         for(Transaction t : transactions){
             for(Operation o : t.getOperations()){
                 System.out.println("executing "+o);
-                if(o.getType()==0){
+                if(o.getType()==0){ // read
                    o.setValue(rows[o.getRowNumber()].getValue());
                 }
-                else{
+                else{ // write
                    rows[o.getRowNumber()].setValue(o.getValue());
                 }
             }
@@ -29,19 +29,19 @@ public class Database{
     }
 
     public static void main(String []args){
-	Transaction t1 = new Transaction();
-        t1.addOperation(new Operation(0, 3, 0));
-        t1.addOperation(new Operation(1, 4, 5));
+	    Transaction t1 = new Transaction(1);
+        t1.addOperation(new Operation(0, 3, 0, t1.getId())); // read
+        t1.addOperation(new Operation(1, 4, 5, t1.getId())); // write
         
-        Transaction t2 = new Transaction();
-        t2.addOperation(new Operation(1, 3, 99));
-        t2.addOperation(new Operation(0, 4, 0));
+        Transaction t2 = new Transaction(2);
+        t2.addOperation(new Operation(1, 3, 99, t2.getId())); // write
+        t2.addOperation(new Operation(0, 4, 0, t2.getId())); // read
 
         LinkedList<Transaction> batch = new LinkedList<Transaction>();
         batch.add(t1);
         batch.add(t2);
         
-        Database db = new Database();
+        Database2 db = new Database2();
         db.executeTransactions(batch);
     }
 }
