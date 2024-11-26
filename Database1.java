@@ -34,13 +34,10 @@ public class Database1 {
         // Here I provide a serial implementation. You need to change it to a concurrent
         // execution.
         for (Transaction t : transactions) {
-            System.out.println("T" + t.getId());
-
             // Sorting operations by rowNumber
             Collections.sort(t.getOperations(), (o1, o2) -> Integer.compare(o1.getRowNumber(), o2.getRowNumber()));
 
             for (Operation o : t.getOperations()) {
-                System.out.println("executing " + o);
                 if (o.getType() == 0) { // read
                     o.setValue(rows[o.getRowNumber()].getValue());
                 } else { // write
@@ -71,7 +68,7 @@ public class Database1 {
                 // wait for permission to start
                 try {
                     currentSemaphore.acquire();
-                    // phase 1: Acquire all locks in global order
+                    // phase 1: acquire all locks in global order
                     List<Integer> lockOrder = t.getOperations().stream()
                             .map(Operation::getRowNumber)
                             .distinct()
@@ -115,21 +112,17 @@ public class Database1 {
 
                     }
 
-                    // Simulate commit phase by delaying lock release until transaction completion
-                    System.out.println("T" + t.getId() + " committing");
-                    latch.countDown(); // Signal completion of the transaction
+                    // signal completion of the transaction
+                    latch.countDown();
 
-                    // Second phase: Release all locks
-                    System.out.println("T" + t.getId() + " releases all locks");
+                    // phase 2: release all locks
                     for (int rowNum : t.getOperations().stream().map(Operation::getRowNumber).distinct().sorted()
                             .toList()) {
                         boolean isWrite = t.getOperations().stream()
                                 .anyMatch(op -> op.getRowNumber() == rowNum && op.getType() == 1);
                         if (isWrite) {
-                            System.out.println(" T" + t.getId() + " releases read lock at row " + rowNum);
                             rowLocks[rowNum].writeLock().unlock();
                         } else {
-                            System.out.println(" T" + t.getId() + " releases write lock at row " + rowNum);
                             rowLocks[rowNum].readLock().unlock();
                         }
                     }
@@ -140,19 +133,10 @@ public class Database1 {
             transactionThread.start();
         }
         try {
-            // Wait for all transactions to complete
+            // wait for all transactions to complete
             latch.await();
         } catch (InterruptedException ex) {
             System.out.println(ex.getMessage());
-        }
-        // Print out the shared operation list
-        System.out.println("Shared Operation List:");
-        for (Operation op : sharedOperationList) {
-            if (op.getType() == 0) {
-                System.out.println(" T" + op.getTransactionId() + " reads at row" + op.getRowNumber());
-            } else {
-                System.out.println(" T" + op.getTransactionId() + " writes at  row" + op.getRowNumber());
-            }
         }
     }
 
@@ -167,7 +151,7 @@ public class Database1 {
          * T2 = r2[y] r2[z] w2[y]
          * T3 = w3[x] r3[y] w3[z]
          */
-        int x = 3; // row
+        int x = 3; // row number
         int y = 4;
         int z = 5;
         Transaction t1 = new Transaction(1);
@@ -214,7 +198,7 @@ public class Database1 {
 
     public static List<Operation> transactionLog1() {
         // test: cyclic
-        int t1 = 1;
+        int t1 = 1; // transactino id
         int t2 = 2;
         List<Operation> ops = new ArrayList<>();
         ops.add(new Operation(1, 3, 0, t1));
@@ -225,7 +209,7 @@ public class Database1 {
 
     public static List<Operation> transactionLog2() {
         // test: non-cyclic
-        int t1 = 1;
+        int t1 = 1; // transactino id
         int t2 = 2;
         int t3 = 3;
         List<Operation> ops = new ArrayList<>();
