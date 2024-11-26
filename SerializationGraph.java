@@ -52,7 +52,7 @@ public class SerializationGraph {
         Queue<Integer> zeroInDegreeQueue = new LinkedList<>();
         for (Integer node : inDegree.keySet()) {
             if (inDegree.get(node) == 0) {
-                System.out.println("node info: "+node);
+                // System.out.println("node info: "+node);
                 zeroInDegreeQueue.offer(node);
             }
         }
