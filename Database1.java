@@ -26,29 +26,10 @@ public class Database1 {
         }
     }
 
-    public void clearOperationList() {
+    public void resetOperationList() {
         sharedOperationList.clear();
     }
-
-    public void executeTransactionsSerial(List<Transaction> transactions) {
-        // Here I provide a serial implementation. You need to change it to a concurrent
-        // execution.
-        for (Transaction t : transactions) {
-            // Sorting operations by rowNumber
-            Collections.sort(t.getOperations(), (o1, o2) -> Integer.compare(o1.getRowNumber(), o2.getRowNumber()));
-
-            for (Operation o : t.getOperations()) {
-                if (o.getType() == 0) { // read
-                    o.setValue(rows[o.getRowNumber()].getValue());
-                } else { // write
-                    rows[o.getRowNumber()].setValue(o.getValue());
-                }
-                sharedOperationList.add(o);
-            }
-        }
-    }
-
-    public void executeTransactionsConcurrent(List<Transaction> transactions) {
+    public void executeTransactions(List<Transaction> transactions) {
         CountDownLatch latch = new CountDownLatch(transactions.size());
         Semaphore[] semaphores = new Semaphore[transactions.size()];
 
@@ -191,10 +172,38 @@ public class Database1 {
         t2.addOperation(new Operation(1, x, 99, t2.getId())); // write
 
         LinkedList<Transaction> batch = new LinkedList<Transaction>();
+        batch.add(t2);
+        batch.add(t1);
+        return batch;
+    }
+
+    public static LinkedList<Transaction> transactionInput3() {
+        Transaction t1 = new Transaction(1);
+        t1.addOperation(new Operation(0, 3, 0, t1.getId())); // read
+        t1.addOperation(new Operation(1, 4, 5, t1.getId())); // write
+
+        Transaction t2 = new Transaction(2);
+        t2.addOperation(new Operation(1, 3, 99, t2.getId())); // write
+        t2.addOperation(new Operation(0, 4, 0, t2.getId())); // read
+
+        LinkedList<Transaction> batch = new LinkedList<Transaction>();
         batch.add(t1);
         batch.add(t2);
         return batch;
     }
+
+    public static void printLogInfo(List<Operation> ops) {
+        System.out.print("Log information: ");
+        for (Operation op : ops) {
+            if (op.getType() == 0) {
+                System.out.print("r" + op.getTransactionId() + " ");
+            } else {
+                System.out.print("w" + op.getTransactionId() + " ");
+            }
+        }
+        System.out.println();
+    }
+
 
     public static List<Operation> transactionLog1() {
         // test: cyclic
@@ -204,6 +213,7 @@ public class Database1 {
         ops.add(new Operation(1, 3, 0, t1));
         ops.add(new Operation(1, 3, 5, t2));
         ops.add(new Operation(1, 3, 99, t1));
+        printLogInfo(ops);
         return ops;
     }
 
@@ -222,6 +232,7 @@ public class Database1 {
         ops.add(new Operation(0, 3, 0, t1)); // r1[z]
         ops.add(new Operation(1, 2, 0, t2)); // w2[y]
         ops.add(new Operation(1, 1, 0, t1)); // w1[x]
+        printLogInfo(ops);
         return ops;
     }
 
@@ -251,40 +262,34 @@ public class Database1 {
             batch1.add(t2);
         */
 
-
-        Database1 dbSerial = new Database1();
-        Database1 dbConcurrent = new Database1();
+        Database1 db = new Database1();
 
         ////////////////////////////////////////////////////////
         /// Run test cases
         ////////////////////////////////////////////////////////
-        System.out.println("========== Test 1 ==========");
-        System.out.println("Serial: ");
-        dbSerial.executeTransactionsSerial(transactionInput1());
-        verifySerializability(dbSerial.getLogHistory());
+        System.out.println("========== Test 1: test with transaction input 1 ==========");
+        db.executeTransactions(transactionInput1());
+        verifySerializability(db.getLogHistory());
+        db.resetOperationList();
+        System.out.println();
 
+        System.out.println("========== Test 2: test with transaction input 2 ==========");
+        db.executeTransactions(transactionInput2());
+        verifySerializability(db.getLogHistory());
+        db.resetOperationList();
+        System.out.println();
 
-        System.out.println("Concurrent: ");
-        dbConcurrent.executeTransactionsConcurrent(transactionInput1());
-        verifySerializability(dbConcurrent.getLogHistory());
+        System.out.println("========== Test 3: test with transaction input 3 ==========");
+        db.executeTransactions(transactionInput3());
+        verifySerializability(db.getLogHistory());
+        System.out.println();
 
-        dbSerial.clearOperationList();
-        dbConcurrent.clearOperationList();
-
-        System.out.println("========== Test 2 ==========");
-        System.out.println("Serial: ");
-        dbSerial.executeTransactionsSerial(transactionInput2());
-        verifySerializability(dbSerial.getLogHistory());
-
-
-        System.out.println("Concurrent: ");
-        dbConcurrent.executeTransactionsConcurrent(transactionInput2());
-        verifySerializability(dbConcurrent.getLogHistory());
-
-        System.out.println("========== Test 3: test with cyclic log ==========");
+        System.out.println("========== Test 4: test serialization graph functionality with cyclic log ==========");
         verifySerializability(transactionLog1());
+        System.out.println();
 
-        System.out.println("========== Test 4: test with non-cyclic log ==========");
+        System.out.println("========== Test 5: test serialization graph functionality with non-cyclic log ==========");
         verifySerializability(transactionLog2());
+        System.out.println();
     }
 }
