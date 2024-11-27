@@ -8,9 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class Database2{
-
     private Row rows[] = new Row[100];
-    // private LinkedBlockingQueue<Transaction>[] queues = new LinkedBlockingQueue<Transaction>[10];
+
     @SuppressWarnings("unchecked")
     private LinkedBlockingQueue<Transaction>[] queues = (LinkedBlockingQueue<Transaction>[]) new LinkedBlockingQueue[10];
 
@@ -23,7 +22,6 @@ public class Database2{
             rows[i] = new Row(i);
         }
 
-        // Initialize queues
         for (int i = 0; i < 10; i++) {
             queues[i] = new LinkedBlockingQueue<>();
         }
@@ -32,25 +30,11 @@ public class Database2{
     public void resetOperationList() {
         sharedOperationList.clear();
     }
-    // public void executeTransactions(List<Transaction> transactions){
-    //     //Here I provide a serial implementation. You need to change it to a concurrent execution.
-    //     for(Transaction t : transactions){
-    //         for(Operation o : t.getOperations()){
-    //             System.out.println("executing "+o);
-    //             if(o.getType()==0){ // read
-    //                o.setValue(rows[o.getRowNumber()].getValue());
-    //             }
-    //             else{ // write
-    //                rows[o.getRowNumber()].setValue(o.getValue());
-    //             }
-    //         }
-    //     }
-    // }
 
     public void executeTransactions(List<Transaction> transactions) throws InterruptedException {
         latch = new CountDownLatch(10);
 
-        // Create threads for each partition
+        // create threads for each partition
         List<Thread> threads = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final int partitionId = i;
@@ -59,17 +43,16 @@ public class Database2{
             thread.start();
         }
 
-        // Distribute transactions to first queue
         for (Transaction t : transactions) {
             queues[0].put(t);
         }
 
-        // Add poison pills to signal end of processing
+        // add empty transaction to signal end of processing
         for (int i = 0; i < 10; i++) {
-            queues[i].put(new Transaction()); // Empty transaction as poison pill
+            queues[i].put(new Transaction());
         }
 
-        // Wait for all threads to complete
+        // wait for all threads to complete
         latch.await();
     }
 
@@ -78,27 +61,25 @@ public class Database2{
             while (true) {
                 Transaction transaction = queues[partitionId].take();
 
-                // Empty transaction signals end of processing
                 if (transaction.getOperations().isEmpty()) {
                     if (partitionId < 9) {
-                        // Pass empty transaction to next queue
                         queues[partitionId + 1].put(transaction);
                     }
                     latch.countDown();
                     return;
                 }
 
-                // Process operations in this partition
+                // process operations in this partition
                 List<Operation> processedOperations = new ArrayList<>();
                 for (Operation o : transaction.getOperations()) {
                     int rowNum = o.getRowNumber();
 
-                    // Check if this partition is responsible for this row
+                    // check if this partition is responsible for this row
                     if (rowNum >= partitionId * 10 && rowNum < (partitionId + 1) * 10) {
-                        if (o.getType() == 0) { // Read
+                        if (o.getType() == 0) { // read
                             System.out.println("Transaction "+o.getTransactionId()+" reads row " + rowNum + " = " + rows[rowNum].getValue());
                             o.setValue(rows[rowNum].getValue());
-                        } else { // Write
+                        } else { // write
                             System.out.println("Transaction "+o.getTransactionId()+" writes row " + rowNum + " = " + o.getValue());
                             rows[rowNum].setValue(o.getValue());
                         }
@@ -113,10 +94,9 @@ public class Database2{
                     }
                 }
 
-                // Remove processed operations
                 transaction.getOperations().removeAll(processedOperations);
 
-                // Pass transaction to next queue if not empty
+                // pass transaction to next queue if not empty
                 if (partitionId < 9 && !transaction.getOperations().isEmpty()) {
                     queues[partitionId + 1].put(transaction);
                 }
