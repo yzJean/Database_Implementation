@@ -270,13 +270,13 @@ public class Database1 {
         System.out.println("========== Test 1: test with transaction input 1 ==========");
         db.executeTransactions(transactionInput1());
         verifySerializability(db.getLogHistory());
-        db.resetOperationList();
+        db.resetOperationList(); // reset internal operation list for next test
         System.out.println();
 
         System.out.println("========== Test 2: test with transaction input 2 ==========");
         db.executeTransactions(transactionInput2());
         verifySerializability(db.getLogHistory());
-        db.resetOperationList();
+        db.resetOperationList(); // reset internal operation list for next test
         System.out.println();
 
         System.out.println("========== Test 3: test with transaction input 3 ==========");
