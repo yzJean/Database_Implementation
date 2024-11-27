@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.stream.Collectors;
 
 public class Database1 {
 
@@ -54,7 +55,7 @@ public class Database1 {
                             .map(Operation::getRowNumber)
                             .distinct()
                             .sorted()
-                            .toList();
+                            .collect(Collectors.toList());
 
                     for (int rowNum : lockOrder) {
                         boolean isWrite = t.getOperations().stream()
@@ -98,7 +99,7 @@ public class Database1 {
 
                     // phase 2: release all locks
                     for (int rowNum : t.getOperations().stream().map(Operation::getRowNumber).distinct().sorted()
-                            .toList()) {
+                            .collect(Collectors.toList())) {
                         boolean isWrite = t.getOperations().stream()
                                 .anyMatch(op -> op.getRowNumber() == rowNum && op.getType() == 1);
                         if (isWrite) {
