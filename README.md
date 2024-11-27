@@ -54,8 +54,8 @@ Two ways to run the program: run an all-in-one script, or run manually
 * From `Database1`
     ```
         ========== Test 1: test with transaction input 1 ==========
-        Transaction 1 reads row 3 = 0
-        Transaction 1 writes row 3 = 5
+        Transaction 3 writes row 3 = 99
+        Transaction 3 reads row 4 = 4
         ...
         This execution is equivalent to a serial execution of:
         Transaction 3 -> Transaction 2 -> Transaction 1
@@ -64,8 +64,8 @@ Two ways to run the program: run an all-in-one script, or run manually
 * From `Database2`
     ```
         ========== Test 3: test with transaction input 3 ==========
-        Transaction 1 reads row 3 = 0
-        Transaction 2 writes row 3 = 99
+        Transaction 3 writes row 3 = 99
+        Transaction 3 reads row 4 = 4
         ...
         This is not a serializable execution
     ```
